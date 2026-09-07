@@ -156,6 +156,32 @@ python3 train_gpt_mlx.py
 
 Validation always runs on the full `fineweb_val_*` split, which is the fixed first-50k-document set. The smoke command above skips periodic validation and just prints the final `val_loss` and `val_bpb` once at the end.
 
+### Running a CPU Smoke Test
+
+The leaderboard trainer requires CUDA, but a reduced CPU runner is available for
+testing model edits, the canonical shard format, BPB evaluation, and compressed
+artifact roundtrips on Windows or Linux. It is not a leaderboard benchmark.
+
+On Windows with `uv`:
+
+```powershell
+uv venv --python 3.12 .venv
+uv pip install --python .venv\Scripts\python.exe -r requirements.txt
+.venv\Scripts\python.exe data\cached_challenge_fineweb.py --variant sp1024 --train-shards 1
+.venv\Scripts\python.exe scripts\local_cpu_smoke.py `
+  --iterations 1 --train-batch-tokens 256 `
+  --eval-tokens 256 --eval-batch-tokens 256 `
+  --output logs\local_cpu_quickcheck.ptz
+.venv\Scripts\python.exe -m unittest discover -s tests -p "test_local_cpu_scripts.py" -v
+```
+
+The defaults use a 2-layer, width-128 model and only a small validation prefix.
+Model size, sequence length, token counts, and iteration count can be overridden
+through command-line arguments; run the script with `--help` for the full list.
+Evaluation ranges must be sequence-aligned and are rejected rather than silently
+rounded or truncated. See [`LOCAL_CPU_EXPERIMENT.md`](LOCAL_CPU_EXPERIMENT.md)
+for the bounded study, exact stage settings, measured evidence, and limitations.
+
 ### Scaling Up to a Remote Machine
 
 Once you're happy with your local tests, or you want more compute, switch to a remote CUDA machine.
